@@ -7,7 +7,8 @@ import (
 )
 
 type Tconfig struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	Token string `json:"token"`
 }
 
 func ParseConfig(configName string) (config Tconfig, err error) {
