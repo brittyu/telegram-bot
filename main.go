@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"strconv"
@@ -8,14 +9,29 @@ import (
 	"telegram-bot/tconfig"
 	"time"
 
+	"github.com/go-redis/redis"
+	_ "github.com/go-sql-driver/mysql"
 	"gopkg.in/telebot.v3"
 )
+
+var db *sql.DB
+var rdb *redis.Client
 
 func main() {
 	config, err := tconfig.ParseConfig("etc/config.yaml")
 	if err != nil {
 		log.Fatal(err)
 		return
+	}
+
+	err = initDb(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = initCache(config)
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	pref := telebot.Settings{
@@ -53,4 +69,36 @@ func main() {
 	})
 
 	tele.Start()
+}
+
+func initDb(config tconfig.Tconfig) (err error) {
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", config.Mysql.Username, config.Mysql.Password, config.Mysql.Host, config.Mysql.Port, config.Mysql.Database)
+	db, err = sql.Open("mysql", dsn)
+	if err != nil {
+		return err
+	}
+
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
+
+	return nil
+}
+
+func initCache(config tconfig.Tconfig) (err error) {
+	rdb = redis.NewClient(&redis.Options{
+		Addr:     config.Redis.Host + ":" + config.Redis.Port,
+		Password: config.Redis.Password,
+		DB:       0,
+	})
+	_, err = rdb.Ping().Result()
+	if err != nil {
+		return err
+	}
+	return nil
 }
