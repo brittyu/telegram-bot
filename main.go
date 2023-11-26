@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"gopkg.in/telebot.v3"
-	"gopkg.in/telebot.v3/middleware"
 )
 
 func main() {
@@ -26,7 +25,6 @@ func main() {
 	tele, err := telebot.NewBot(pref)
 
 	// tele.Use(middleware.Logger())
-	tele.Use(middleware.AutoRespond())
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -35,7 +33,6 @@ func main() {
 	menu.LoadAllMenu(tele)
 
 	tele.Handle(telebot.OnText, func(c telebot.Context) error {
-		// msg := c.Text()
 		return c.Send(strconv.FormatInt(c.Chat().ID, 10) + c.Chat().Username)
 	})
 
